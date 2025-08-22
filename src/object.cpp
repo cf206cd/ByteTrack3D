@@ -21,30 +21,30 @@ void iou_distance(vector<Object3D> tracks, vector<Object3D> detections, vector<v
 
 float RoGDIoU(const Object3D& ob1, const Object3D& ob2, float w1, float w2)
 {
-    // 1. 将3D边界框转换到BEV视图 (假设x,y是BEV平面坐标，yaw是旋转角)
+    // 1. Convert 3D bounding box to BEV view (assuming x,y are BEV plane coordinates, yaw is rotation angle)
     RotatedRect b1(Point2f(ob1.x, ob1.y), Size2f(ob1.w, ob1.l), ob1.yaw * 180.0 / CV_PI);
     RotatedRect b2(Point2f(ob2.x, ob2.y), Size2f(ob2.w, ob2.l), ob2.yaw * 180.0 / CV_PI);
 
-    // 2. 计算交集面积
+    // 2. Calculate intersection area
     vector<Point2f> interSection;
     float intersection_area = 0.0;
     if (rotatedRectangleIntersection(b1, b2, interSection)) {
         if (interSection.size() >= 3) {
-            // 计算多边形面积
+            // Calculate polygon area
             intersection_area = contourArea(interSection);
         }
     }
 
-    // 3. 计算并集面积
+    // 3. Calculate union area
     float area1 = b1.size.area();
     float area2 = b2.size.area();
     float union_area = area1 + area2 - intersection_area;
 
-    // 4. 计算最小包围矩形
+    // 4. Calculate minimum enclosing rectangle
     vector<Point2f> points;
     points.push_back(b1.center);
     points.push_back(b2.center);
-    // 添加四个顶点
+    // Add four vertices
     Point2f vertices1[4], vertices2[4];
     b1.points(vertices1);
     b2.points(vertices2);
@@ -55,16 +55,16 @@ float RoGDIoU(const Object3D& ob1, const Object3D& ob2, float w1, float w2)
     RotatedRect min_enclosing_rect = minAreaRect(points);
     float c_area = min_enclosing_rect.size.area();
 
-    // 5. 计算中心距离
+    // 5. Calculate center distance
     float center_dist = norm(b1.center - b2.center);
 
-    // 6. 计算外接矩形对角线距离
+    // 6. Calculate diagonal distance of enclosing rectangle
     float diag_dist = sqrt(pow(min_enclosing_rect.size.width, 2) + pow(min_enclosing_rect.size.height, 2));
 
-    // 7. 计算Ro_IoU
+    // 7. Calculate Ro_IoU
     float ro_iou = (union_area > 0) ? (intersection_area / union_area) : 0.0f;
 
-    // 8. 计算Ro_GDIoU
+    // 8. Calculate Ro_GDIoU
     float rogdiou = ro_iou - w1 * (c_area - union_area) / c_area - w2 * (center_dist * center_dist) / (diag_dist * diag_dist);
 
     return rogdiou; 
@@ -129,6 +129,7 @@ double lapjv(const vector<vector<float> > &cost, vector<int> &rowsol, vector<int
 	{
 		if (!extend_cost)
 		{
+			// pause and exit if cost matrix is not square and extend_cost is false
 			(void)system("pause");
 			exit(0);
 		}
@@ -209,6 +210,7 @@ double lapjv(const vector<vector<float> > &cost, vector<int> &rowsol, vector<int
 	int ret = lapjv_internal(n, cost_ptr, x_c, y_c);
 	if (ret != 0)
 	{
+		// pause and exit on error
 		(void)system("pause");
 		exit(0);
 	}

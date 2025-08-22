@@ -12,7 +12,7 @@ STrack::STrack(Object3D object3d_)
 	kalman_filter_yaw(0.1)
 {
 	object3d = object3d_;
-	// 初始化位姿相关的协方差矩阵
+	// Initialize covariance matrix for pose
 	Eigen::VectorXd diag_P_pose(6);
 	diag_P_pose << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 	Eigen::MatrixXd P_pose = diag_P_pose.asDiagonal();
@@ -67,40 +67,40 @@ void STrack::update(Object3D object3d_)
 {
 	
 	object3d = object3d_;
-	std::cout << "更新 object3d: x = " << object3d.x 
+	std::cout << "Updating object3d: x = " << object3d.x 
               << ", y = " << object3d.y 
               << ", l = " << object3d.l 
               << ", w = " << object3d.w 
               << ", yaw = " << object3d.yaw 
               << ", vx = " << object3d.vx 
               << ", vy = " << object3d.vy << std::endl;
-	// 在进行卡尔曼滤波更新前，对 object3d.yaw 进行归一化处理
+	// Normalize object3d.yaw before Kalman filter update
 	object3d.yaw = norm_radian(object3d.yaw);
-	std::cout << "归一化后 object3d.yaw = " << object3d.yaw << std::endl;
+	std::cout << "Normalized object3d.yaw = " << object3d.yaw << std::endl;
 
-	// 显式指定向量大小，避免潜在的未初始化问题
+	// Explicitly specify vector size to avoid potential uninitialized issues
 	Eigen::VectorXd pose_measurement(2);
 	pose_measurement << object3d.x, object3d.y;
-	std::cout << "位姿测量值: x = " << pose_measurement[0] 
+	std::cout << "Pose measurement: x = " << pose_measurement[0] 
               << ", y = " << pose_measurement[1] << std::endl;
 	kalman_filter_pose.update(pose_measurement);
 
 	Eigen::VectorXd size_measurement(2);
 	size_measurement << object3d.l, object3d.w;
-	std::cout << "尺寸测量值: l = " << size_measurement[0] 
+	std::cout << "Size measurement: l = " << size_measurement[0] 
               << ", w = " << size_measurement[1] << std::endl;
 	kalman_filter_size.update(size_measurement);
 
 	float vel_yaw = norm_radian(atan2(object3d.vy, object3d.vx));
 	Eigen::VectorXd yaw_measurement(2);
 	yaw_measurement << object3d.yaw, vel_yaw;
-	std::cout << "偏航测量值: yaw = " << yaw_measurement[0] 
+	std::cout << "Yaw measurement: yaw = " << yaw_measurement[0] 
               << ", vel_yaw = " << yaw_measurement[1] << std::endl;
 	kalman_filter_yaw.update(yaw_measurement);
 
 	state = TrackState::Tracked;
 	lost_frame = 0;
-	std::cout << "更新状态为 Tracked，丢失帧数重置为 0" << std::endl;
+	std::cout << "Updated state to Tracked, lost frame count reset to 0" << std::endl;
 }
 
 void STrack::predict()

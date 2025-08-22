@@ -6,11 +6,11 @@
 
 using namespace std;
 
-// 生成随机对象
+// Generate random objects
 vector<Object3D> generate_random_objects(int count, int frame_id) {
     vector<Object3D> objects;
     
-    // 随机数生成器
+    // Random number generator
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> pos_dist(-10.0f, 10.0f);
@@ -28,7 +28,7 @@ vector<Object3D> generate_random_objects(int count, int frame_id) {
         obj.vx = vel_dist(gen);
         obj.vy = vel_dist(gen);
         obj.yaw = angle_dist(gen);
-        obj.class_id = i % 3 + 1; // 3个类别
+        obj.class_id = i % 3 + 1; // 3 classes
         obj.score = score_dist(gen);
         objects.push_back(obj);
     }
@@ -36,7 +36,7 @@ vector<Object3D> generate_random_objects(int count, int frame_id) {
     return objects;
 }
 
-// 模拟移动对象
+// Simulate moving objects
 vector<Object3D> move_objects(const vector<Object3D>& prev_objects, float dt = 0.1f) {
     vector<Object3D> new_objects;
     
@@ -46,10 +46,10 @@ vector<Object3D> move_objects(const vector<Object3D>& prev_objects, float dt = 0
     
     for (const auto& prev : prev_objects) {
         Object3D obj = prev;
-        // 根据速度更新位置
+        // Update position based on velocity
         obj.x += obj.vx * dt + noise(gen);
         obj.y += obj.vy * dt + noise(gen);
-        // 添加小的随机变化
+        // Add small random changes
         obj.w += noise(gen) * 0.1f;
         obj.l += noise(gen) * 0.1f;
         obj.score = max(0.5f, min(1.0f, obj.score + noise(gen) * 0.05f));
@@ -60,53 +60,70 @@ vector<Object3D> move_objects(const vector<Object3D>& prev_objects, float dt = 0
 }
 
 int main() {
-    cout << "ByteTrack3D 示例程序" << endl;
-    cout << "===================" << endl << endl;
+    cout << "ByteTrack3D Example Program" << endl;
+    cout << "===========================" << endl << endl;
     
-    // 创建跟踪器
+    // Create tracker
     ByteTrack tracker;
     
-    // 模拟10帧数据
-    const int num_frames = 10;
+    // Initialize with first frame using init
     vector<Object3D> current_objects = generate_random_objects(5, 0);
+    cout << "Frame 1 (Initialization):" << endl;
+    cout << "Input objects: " << current_objects.size() << endl;
     
-    for (int frame = 1; frame <= num_frames; frame++) {
-        cout << "第 " << frame << " 帧:" << endl;
-        cout << "输入对象: " << current_objects.size() << " 个" << endl;
+    auto tracks = tracker.init(current_objects);
+    cout << "Initialization tracking result: " << tracks.size() << endl;
+    for (const auto& track : tracks) {
+        cout << "  ID: " << track.track_id 
+             << " Position: (" << setprecision(2) << track.object3d.x 
+             << ", " << track.object3d.y << ")"
+             << " Velocity: (" << track.object3d.vx 
+             << ", " << track.object3d.vy << ")"
+             << " Score: " << track.object3d.score << endl;
+    }
+    cout << endl;
+    
+    // Simulate next 9 frames of data
+    const int num_frames = 10;
+    
+    for (int frame = 2; frame <= num_frames; frame++) {
+        cout << "Frame " << frame << ":" << endl;
         
-        // 更新跟踪器
-        auto tracks = tracker.update(current_objects);
-        
-        cout << "跟踪结果: " << tracks.size() << " 个" << endl;
-        for (const auto& track : tracks) {
-            cout << "  ID: " << track.track_id 
-                 << " 位置: (" << setprecision(2) << track.object3d.x 
-                 << ", " << track.object3d.y << ")"
-                 << " 速度: (" << track.object3d.vx 
-                 << ", " << track.object3d.vy << ")"
-                 << " 分数: " << track.object3d.score << endl;
-        }
-        
-        // 生成下一帧对象
-        if (frame % 3 == 0) {
-            // 每3帧随机添加/删除一些对象
+        // Generate next frame objects
+        if (frame % 4 == 0) {
+            // Randomly add/remove some objects every 4 frames
             random_device rd;
             mt19937 gen(rd());
             uniform_int_distribution<int> count_dist(3, 6);
             current_objects = generate_random_objects(count_dist(gen), frame);
         } else {
-            // 正常移动对象
+            // Move objects normally
             current_objects = move_objects(current_objects);
+        }
+        
+        cout << "Input objects: " << current_objects.size() << endl;
+        
+        // Update tracker
+        tracks = tracker.update(current_objects);
+        
+        cout << "Tracking result: " << tracks.size() << endl;
+        for (const auto& track : tracks) {
+            cout << "  ID: " << track.track_id 
+                 << " Position: (" << setprecision(2) << track.object3d.x 
+                 << ", " << track.object3d.y << ")"
+                 << " Velocity: (" << track.object3d.vx 
+                 << ", " << track.object3d.vy << ")"
+                 << " Score: " << track.object3d.score << endl;
         }
         
         cout << endl;
     }
     
-    cout << "示例完成！" << endl;
-    cout << "使用说明:" << endl;
-    cout << "1. 编译: cd ByteTrack3D && mkdir build && cd build && cmake .. && make" << endl;
-    cout << "2. 运行: ./example" << endl;
-    cout << "3. 运行测试: make test" << endl;
+    cout << "Example completed!" << endl;
+    cout << "Usage instructions:" << endl;
+    cout << "1. Compile: cd ByteTrack3D && mkdir build && cd build && cmake .. && make" << endl;
+    cout << "2. Run: ./example" << endl;
+    cout << "3. Run tests: make test" << endl;
     
     return 0;
 }

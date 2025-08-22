@@ -11,7 +11,7 @@ ByteTrack::ByteTrack(int max_time_lost, float detect_thresh, float high_thresh, 
       match_thresh_1(match_thresh_1),
       match_thresh_2(match_thresh_2)
 {
-    cout << "ByteTrack 构造函数被调用，max_time_lost: " << max_time_lost 
+    cout << "ByteTrack constructor called, max_time_lost: " << max_time_lost 
          << ", detect_thresh: " << detect_thresh 
          << ", high_thresh: " << high_thresh 
          << ", match_thresh_1: " << match_thresh_1 
@@ -20,24 +20,24 @@ ByteTrack::ByteTrack(int max_time_lost, float detect_thresh, float high_thresh, 
 
 ByteTrack::~ByteTrack()
 {
-    cout << "ByteTrack 析构函数被调用" << endl;
+    cout << "ByteTrack destructor called" << endl;
 }
 
 std::vector<STrack> ByteTrack::init(std::vector<Object3D> objects)
 {
-    cout << "开始初始化，检测到 " << objects.size() << " 个目标" << endl;
+    cout << "Starting initialization, detected " << objects.size() << " objects" << endl;
     for(int i = 0; i < objects.size(); i++)
     {
         stracks.push_back(STrack(objects[i]));
-        cout << "初始化第 " << i << " 个 STrack" << endl;
+        cout << "Initializing STrack " << i << endl;
     }
-    cout << "初始化完成，当前共有 " << stracks.size() << " 个 STrack" << endl;
+    cout << "Initialization completed, current STrack count: " << stracks.size() << endl;
     return stracks;
 }
 
 std::vector<STrack> ByteTrack::update(std::vector<Object3D> objects)
 {
-    cout << "开始第 " << frame_id + 1 << " 帧的更新，检测到 " << objects.size() << " 个目标" << endl;
+    cout << "Starting update for frame " << frame_id + 1 << ", detected " << objects.size() << " objects" << endl;
     frame_id++;
     vector<Object3D> high_score_objects;
     vector<Object3D> low_score_objects;
@@ -52,14 +52,14 @@ std::vector<STrack> ByteTrack::update(std::vector<Object3D> objects)
             low_score_objects.push_back(objects[i]);
         }
     }
-    cout << "高分目标数量: " << high_score_objects.size() << "，低分目标数量: " << low_score_objects.size() << endl;
+    cout << "High score objects: " << high_score_objects.size() << ", Low score objects: " << low_score_objects.size() << endl;
 
-    cout << "开始预测所有 STrack 的状态" << endl;
+    cout << "Starting prediction for all STrack states" << endl;
     for(int i=0;i<stracks.size();i++)
     {
        stracks[i].predict();
     }
-    cout << "预测完成，共 " << stracks.size() << " 个 STrack" << endl;
+    cout << "Prediction completed, total STrack count: " << stracks.size() << endl;
 
     vector<Object3D> tracks;
     for(int i=0;i<stracks.size();i++)
@@ -69,20 +69,20 @@ std::vector<STrack> ByteTrack::update(std::vector<Object3D> objects)
             tracks.push_back(stracks[i].object3d);
         }
     }
-    cout << "筛选出未移除的 STrack 对应的目标，数量: " << tracks.size() << endl;
+    cout << "Filtered out unremoved STrack objects, count: " << tracks.size() << endl;
 
     vector<vector<int>> matches;
     vector<int> remain_tracks_idx;
     vector<int> remain_detections_idx;
-    cout << "开始第一次匹配，匹配阈值: " << match_thresh_1 << endl;
+    cout << "Starting first matching, matching threshold: " << match_thresh_1 << endl;
     match(tracks, high_score_objects, matches, remain_tracks_idx, remain_detections_idx, match_thresh_1);
-    cout << "第一次匹配完成，匹配对数: " << matches.size() 
-         << "，剩余轨迹索引数量: " << remain_tracks_idx.size() 
-         << "，剩余检测索引数量: " << remain_detections_idx.size() << endl;
+    cout << "First matching completed, match pairs: " << matches.size() 
+         << ", remaining track indices: " << remain_tracks_idx.size() 
+         << ", remaining detection indices: " << remain_detections_idx.size() << endl;
 
     for(int i=0;i<matches.size();i++)
     {
-        cout << "更新第 " << matches[i][0] << " 个 STrack，使用第 " << matches[i][1] << " 个高分目标" << endl;
+        cout << "Updating STrack " << matches[i][0] << " with high score object " << matches[i][1] << endl;
         stracks[matches[i][0]].update(high_score_objects[matches[i][1]]);
     }
 
@@ -91,33 +91,33 @@ std::vector<STrack> ByteTrack::update(std::vector<Object3D> objects)
     {
         remain_tracks.push_back(stracks[remain_tracks_idx[i]].object3d);
     }
-    cout << "获取剩余轨迹对应的目标，数量: " << remain_tracks.size() << endl;
+    cout << "Getting objects for remaining tracks, count: " << remain_tracks.size() << endl;
 
     vector<vector<int>> re_matches;
     vector<int> re_remain_tracks_idx;
     vector<int> re_remain_detections_idx;
-    cout << "开始第二次匹配，匹配阈值: " << match_thresh_2 << endl;
+    cout << "Starting second matching, matching threshold: " << match_thresh_2 << endl;
     match(remain_tracks, low_score_objects, re_matches, re_remain_tracks_idx, re_remain_detections_idx, match_thresh_2);
-    cout << "第二次匹配完成，匹配对数: " << re_matches.size() 
-         << "，剩余轨迹索引数量: " << re_remain_tracks_idx.size() 
-         << "，剩余检测索引数量: " << re_remain_detections_idx.size() << endl;
+    cout << "Second matching completed, match pairs: " << re_matches.size() 
+         << ", remaining track indices: " << re_remain_tracks_idx.size() 
+         << ", remaining detection indices: " << re_remain_detections_idx.size() << endl;
 
     for(int i=0;i<re_matches.size();i++)
     {
         stracks[remain_tracks_idx[re_matches[i][0]]].update(low_score_objects[re_matches[i][1]]);
-        cout << "更新第 " << remain_tracks_idx[re_matches[i][0]] << " 个 STrack，使用第 " << re_matches[i][1] << " 个低分目标" << endl;
+        cout << "Updating STrack " << remain_tracks_idx[re_matches[i][0]] << " with low score object " << re_matches[i][1] << endl;
     }
 
     for(int i=0;i<re_remain_tracks_idx.size();i++)
     {
         stracks[re_remain_tracks_idx[i]].mark_lost();
-        cout << "标记第 " << re_remain_tracks_idx[i] << " 个 STrack 为丢失状态" << endl;
+        cout << "Marking STrack " << re_remain_tracks_idx[i] << " as lost" << endl;
     }
 
     for(int i=0;i<remain_detections_idx.size();i++)
     {
         stracks.push_back(STrack(high_score_objects[remain_detections_idx[i]]));
-        cout << "新增第 " << stracks.size() - 1 << " 个 STrack，使用第 " << remain_detections_idx[i] << " 个高分目标" << endl;
+        cout << "Adding new STrack " << stracks.size() - 1 << " with high score object " << remain_detections_idx[i] << endl;
     }
 
     int removed_count = 0;
@@ -127,18 +127,18 @@ std::vector<STrack> ByteTrack::update(std::vector<Object3D> objects)
         {
             stracks[i].mark_removed();
             removed_count++;
-            cout << "标记第 " << i << " 个 STrack 为移除状态，丢失帧数: " << stracks[i].lost_frame << endl;
+            cout << "Marking STrack " << i << " as removed, lost frames: " << stracks[i].lost_frame << endl;
         }
     }
-    cout << "共标记 " << removed_count << " 个 STrack 为移除状态" << endl;
+    cout << "Marked " << removed_count << " STracks as removed" << endl;
 
-    // 使用标准库的 remove_if 和 erase 组合来移除状态为 Removed 的元素，提高代码效率
+    // Use std::remove_if and erase combination to remove elements with Removed state for better code efficiency
     int before_size = stracks.size();
     stracks.erase(std::remove_if(stracks.begin(), stracks.end(), [](const STrack& track) {
         return track.state == TrackState::Removed;
     }), stracks.end());
-    cout << "移除移除状态的 STrack，移除前数量: " << before_size << "，移除后数量: " << stracks.size() << endl;
+    cout << "Removed STracks with removed state, count before: " << before_size << ", count after: " << stracks.size() << endl;
 
-    cout << "第 " << frame_id << " 帧更新完成，当前共有 " << stracks.size() << " 个 STrack" << endl;
+    cout << "Frame " << frame_id << " update completed, current STrack count: " << stracks.size() << endl;
     return stracks;
 }
